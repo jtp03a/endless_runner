@@ -41,9 +41,10 @@ class AllSprites(pygame.sprite.Group):
     self.BG1_sprites = pygame.sprite.Group()
     self.BG2_sprites = pygame.sprite.Group()
     self.BG3_sprites = pygame.sprite.Group()
+    self.collision_sprites = pygame.sprite.Group()
 
 
-    self.layer_setup(self.ground, self.ground_sprites, 'Ground')
+    self.layer_setup(self.ground, [self.ground_sprites, self, self.collision_sprites], 'Ground')
     self.layer_setup(self.forground, self.forground_sprites, 'FG')
     self.layer_setup(self.canopy, self.canopy_sprites, 'Canopy')
     self.layer_setup(self.trees1, self.trees1_sprites, 'Trees1')
@@ -91,7 +92,7 @@ class AllSprites(pygame.sprite.Group):
       Tile((0 * surf.get_width(), -130), surf, group, layer)
       Tile((1 * surf.get_width(), -130), surf, group, layer)
 
-  def infinite_tiles(self, group, layer, scroll_speed):
+  def infinite_tiles(self, group, layer, scroll_speed, groups):
     for i, sprite in enumerate(group):
       offset = self.camera.offset.x / scroll_speed
       self.display_surface.blit(sprite.image, (sprite.rect.left - offset - 200, -130 - self.camera.offset.y))
@@ -99,27 +100,31 @@ class AllSprites(pygame.sprite.Group):
       if difference > 0:
         sprite.kill()
       if len(group.sprites()) < 3:
-          Tile((group.sprites()[-1].rect.right, -150), sprite.image, group, layer)
+          Tile((group.sprites()[-1].rect.right, -130), sprite.image, groups, layer)
   
   def custom_draw(self, player):
 
     self.camera.scroll()
 
-    self.infinite_tiles(self.BG3_sprites, 'BG3', 3.0)
-    self.infinite_tiles(self.BG2_sprites, 'BG2', 3.0)
-    self.infinite_tiles(self.BG1_sprites, 'BG1', 3.0)
-    self.infinite_tiles(self.trees4_sprites, 'Trees4', 2.5)
-    self.infinite_tiles(self.lights2_sprites, 'Lights2', 2.2)
-    self.infinite_tiles(self.trees3_sprites, 'Trees3', 2.0)
-    self.infinite_tiles(self.trees2_sprites, 'Trees2', 1.7)
-    self.infinite_tiles(self.lights1_sprites, 'Lights1', 1.5)
-    self.infinite_tiles(self.trees1_sprites, 'Trees1', 1.2)
-    self.infinite_tiles(self.canopy_sprites, 'Canopy', 1.2)
-    self.infinite_tiles(self.ground_sprites, 'Ground', 1.0)
+    self.infinite_tiles(self.BG3_sprites, 'BG3', 3.0, self.BG3_sprites)
+    self.infinite_tiles(self.BG2_sprites, 'BG2', 3.0, self.BG2_sprites)
+    self.infinite_tiles(self.BG1_sprites, 'BG1', 3.0, self.BG1_sprites)
+    self.infinite_tiles(self.trees4_sprites, 'Trees4', 2.5, self.trees4_sprites)
+    self.infinite_tiles(self.lights2_sprites, 'Lights2', 2.2, self.lights2_sprites)
+    self.infinite_tiles(self.trees3_sprites, 'Trees3', 2.0, self.trees3_sprites)
+    self.infinite_tiles(self.trees2_sprites, 'Trees2', 1.7, self.trees2_sprites)
+    self.infinite_tiles(self.lights1_sprites, 'Lights1', 1.5, self.lights1_sprites)
+    self.infinite_tiles(self.trees1_sprites, 'Trees1', 1.2, self.trees1_sprites)
+    self.infinite_tiles(self.canopy_sprites, 'Canopy', 1.2, self.canopy_sprites)
+    self.infinite_tiles(self.ground_sprites, 'Ground', 1.0, [self.ground_sprites, self.collision_sprites, self])
+
+    
+    # for sprite in self.ground_sprites:
+    #   pygame.draw.rect(self.display_surface, 'red', sprite.mask_rect, 5)
 
     self.display_surface.blit(player.image, (player.rect.x - self.camera.offset.x, player.rect.y - self.camera.offset.y))
 
-    self.infinite_tiles(self.forground_sprites, 'FG', .8)
+    self.infinite_tiles(self.forground_sprites, 'FG', .8, self.forground_sprites)
 
     # active elements
     # for sprite in sorted(self.sprites(), key = lambda sprite: sprite.z):
@@ -145,7 +150,7 @@ class Main:
 
     self.all_sprites = AllSprites()
 
-    self.player = Player((0, 578), self.all_sprites)
+    self.player = Player((0, 478), self.all_sprites, self.all_sprites.collision_sprites)
 
     self.all_sprites.setup_camera(self.player)
 

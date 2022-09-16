@@ -5,7 +5,7 @@ from os import walk
 from pygame.math import Vector2 as vector
 
 class Player(pygame.sprite.Sprite):
-  def __init__(self, pos, groups):
+  def __init__(self, pos, groups, collision_sprites):
     super().__init__(groups)
     self.import_assets('./graphics/player')
     self.status = 'Left_Idle'
@@ -22,6 +22,14 @@ class Player(pygame.sprite.Sprite):
     self.speed = 400
 
     self.attacking = False
+
+    self.collision_sprites = collision_sprites
+    self.collision_rect = self.rect.inflate(self.rect.width, self.rect.height * .75)
+    self.prev_rect = self.rect.copy()
+
+    self.gravity = 15
+    self.jump_speed = 500
+    self.on_floor = True
 
   def import_assets(self, path):
     self.anim_dict = {}
@@ -42,7 +50,7 @@ class Player(pygame.sprite.Sprite):
   
   def get_status(self):
     # idle
-    if self.direction.magnitude() == 0:
+    if self.direction.x == 0:
       self.status = self.status.split('_')[0] + '_Idle'
 
     # attacking
@@ -80,6 +88,9 @@ class Player(pygame.sprite.Sprite):
         self.status = 'Right'
     else:
         self.direction.x = 0
+    
+    if keys[pygame.K_UP] and self.on_floor:
+      self.direction.y = -self.jump_speed
 
     if pygame.mouse.get_pressed()[0]:
       self.frame_index = 0
@@ -103,10 +114,45 @@ class Player(pygame.sprite.Sprite):
     #   self.can_shoot = False
     #   self.shot_time = pygame.time.get_ticks()
 
+  # def check_floor_contact(self):
+  #   bottom_rect = pygame.Rect(0,0,self.rect.width,5)
+  #   bottom_rect.midtop = self.rect.midbottom
+  #   for sprite in self.collision_sprites.sprites():
+  #     if sprite.rect.colliderect(bottom_rect):
+  #       if self.direction.y > 0:
+  #         self.on_floor = True
+
+  def collision(self, direction):
+    for sprite in self.collision_sprites.sprites():
+      if sprite.rect.colliderect(self.rect):
+        if direction == 'horizontal':
+          # left collision
+          if self.rect.left <= sprite.rect.right and self.prev_rect.left >= sprite.prev_rect.right:
+            self.rect.left = sprite.rect.right
+          # right collision
+          if self.rect.right >= sprite.rect.left and self.prev_rect.right <= sprite.prev_rect.left:
+            self.rect.right = sprite.rect.left
+          self.pos.x = self.rect.x
+        elif direction == 'vertical': 
+          # top collision
+          if self.rect.top <= sprite.rect.bottom and self.prev_rect.top >= sprite.prev_rect.bottom:
+            self.rect.top = sprite.rect.bottom
+          # bottom collision
+          if self.collision_rect.bottom >= sprite.mask_rect.top:
+            self.collision_rect.bottom = sprite.mask_rect.top
+            self.on_floor = True
+            self.direction.y = 0
+          self.pos.y = self.rect.y
+
+     # check if the player is falling
+    if self.on_floor and self.direction.y != 0:
+      self.on_floor = False
+      
+
   def move(self, dt, camera_left_x):  
     # Horizontal movement + collision
     self.pos.x += self.direction.x * self.speed * dt
-    # self.hitbox.centerx = round(self.pos.x)
+    self.collision_rect.centerx = round(self.pos.x)
     self.rect.x = round(self.pos.x)
     if self.rect.x < camera_left_x:
       self.rect.x = camera_left_x
@@ -116,19 +162,19 @@ class Player(pygame.sprite.Sprite):
 
     # Vertical movement + collision
     # gravity
-    # self.direction.y += self.gravity
-    # self.pos.y += self.direction.y * dt
-    # self.hitbox.centery = round(self.pos.y)
-    
-    
-    # self.rect.y = round(self.pos.y)
+    self.direction.y += self.gravity
+    self.pos.y += self.direction.y * dt
+    self.collision_rect.centery = round(self.pos.y)
+    self.rect.y = round(self.pos.y)
 
     # get vertical collisions
-    # self.collision('vertical')
+    self.collision('vertical')
     # self.moving_floor = None
 
   def update(self, dt, camera_left_x):
+    self.prev_rect = self.rect.copy()
     self.input(camera_left_x)
     self.get_status()
     self.move(dt, camera_left_x)
+    # self.check_floor_contact()
     self.animate(dt)

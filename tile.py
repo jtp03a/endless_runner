@@ -8,7 +8,9 @@ class Tile(pygame.sprite.Sprite):
     self.image = surf
     self.rect = self.image.get_rect(topleft = pos)
     self.z = z
-
+    self.prev_rect = self.rect.copy()
+    self.mask = pygame.mask.from_surface(self.image)
+    self.mask_rect = self.mask.get_rect(topleft = (pos[0], 723 + pos[1]))
 
   # def update(self, dt):
   #   self.prev_rect = self.rect.copy()

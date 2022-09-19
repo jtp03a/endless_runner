@@ -10,7 +10,7 @@ class Tile(pygame.sprite.Sprite):
     self.z = z
     self.prev_rect = self.rect.copy()
     self.mask = pygame.mask.from_surface(self.image)
-    self.mask_rect = self.mask.get_rect(topleft = (pos[0], 723 + pos[1]))
+    self.mask_rect = self.mask.get_rect(topleft = (pos[0], 730 + pos[1]))
 
   # def update(self, dt):
   #   self.prev_rect = self.rect.copy()

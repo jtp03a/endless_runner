@@ -101,6 +101,8 @@ class AllSprites(pygame.sprite.Group):
     # active elements
     for sprite in sorted(self.sprites(), key = lambda sprite: sprite.z):
       self.display_surface.blit(sprite.image, (sprite.rect.x - self.camera.offset.x, sprite.rect.y - self.camera.offset.y))
+      # if sprite.is_player:
+      #   pygame.draw.rect(self.display_surface, 'red', sprite.rect, 1)
 
     self.infinite_tiles(self.forground_sprites, 'FG', .8, self.forground_sprites)
 
@@ -116,6 +118,7 @@ class Main:
     self.gen_enemies()
 
     self.all_sprites = AllSprites()
+    self.dead_sprites = pygame.sprite.Group()
 
     self.player = Player((0, 478), self.all_sprites, self.all_sprites.collision_sprites)
 
@@ -125,9 +128,20 @@ class Main:
     current_time = pygame.time.get_ticks()
 
     if current_time - self.enemy_time > self.random_interval:
-      Enemy((random.randint(int(self.player.pos.x - 200), int(self.player.pos.x + 200)), 200), self.all_sprites, self.all_sprites.collision_sprites)
+      Enemy((random.randint(int(self.player.pos.x - 200), int(self.player.pos.x + 200)), 200), self.all_sprites, self.all_sprites.collision_sprites, self.player)
       self.random_interval = random.randint(1000, 5000)
       self.enemy_time = pygame.time.get_ticks()
+
+  def damage(self):
+    for sprite in self.all_sprites.sprites():
+      if pygame.sprite.collide_mask(self.player, sprite) and not sprite.is_player and self.player.attacking:
+        sprite.dying = True
+        self.dead_sprites.add(sprite)
+
+  def remove_dead_sprites(self):
+    for sprite in self.dead_sprites.sprites():
+      if self.player.pos.x - sprite.pos.x > WINDOW_WIDTH:
+        sprite.kill() 
 
   def run(self):
     while True:
@@ -139,6 +153,8 @@ class Main:
       dt = self.clock.tick() / 1000
       self.display_surface.fill((12,17,34))
       self.all_sprites.update(dt, self.all_sprites.camera.camera_rect.left)
+      self.damage()
+      self.remove_dead_sprites()
       self.all_sprites.custom_draw()
       self.gen_enemies()
       pygame.display.update()

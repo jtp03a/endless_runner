@@ -7,6 +7,6 @@ class SpriteSheet(object):
     # Load a specific image from a specific rectangle
     def image_at(self, rectangle, colorkey = None, ):
         rect = pygame.Rect(rectangle)
-        image = pygame.Surface(rect.size, pygame.SRCALPHA)
+        image = pygame.Surface(rect.size, pygame.SRCALPHA).convert_alpha()
         image.blit(self.sheet, (0, 0), rect)
         return image

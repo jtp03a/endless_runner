@@ -15,7 +15,7 @@ class Player(pygame.sprite.Sprite):
     self.left_border = 0
     self.right_border = 1280
     # self.mask = pygame.mask.from_surface(self.image)
-    # self.mask_rect = self.mask.get_rect(bottomleft = pos)
+    # self.mask_rect = self.mask.get_rect(topleft = pos)
     self.rect = self.image.get_rect(topleft = pos)
     # float based movement
     self.pos = vector(self.rect.center)
@@ -31,6 +31,7 @@ class Player(pygame.sprite.Sprite):
     self.gravity = 15
     self.jump_speed = 500
     self.on_floor = True
+    self.is_player = True
 
   def import_assets(self, path):
     self.anim_dict = {}
@@ -44,8 +45,6 @@ class Player(pygame.sprite.Sprite):
         rect_w = START_POS[file_name][3]
         rect_h = START_POS[file_name][4]
         self.spritesheet = SpriteSheet(f'./graphics/player/{file}')
-        # for direction in self.asset_direction:
-          # self.anim_dict[f'{direction}_{file_name}'] = []
         self.anim_dict[file_name] = []
         for _ in range(num_frames):
           new_image = self.spritesheet.image_at((start_x, start_y, rect_w, rect_h), colorkey=(255, 255, 255))
@@ -86,6 +85,7 @@ class Player(pygame.sprite.Sprite):
         self.attacking = False
 
     self.image = current_animation[int(self.frame_index)]
+    # self.mask = pygame.mask.from_surface(self.image)
 
   def input(self, camera_left_x):
     keys =  pygame.key.get_pressed()

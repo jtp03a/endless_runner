@@ -3,10 +3,12 @@ from spritesheet import SpriteSheet
 from settings import *
 from os import walk
 from pygame.math import Vector2 as vector
+import math
 
 class Enemy(pygame.sprite.Sprite):
-  def __init__(self, pos, groups, collision_sprites):
+  def __init__(self, pos, groups, collision_sprites, player):
     super().__init__(groups)
+    self.player = player
     self.import_assets('./graphics/enemy')
     self.status = 'Right_Idle'
     self.frame_index = 0
@@ -30,6 +32,9 @@ class Enemy(pygame.sprite.Sprite):
     
     self.gravity = 15
     self.on_floor = True
+    self.is_player = False
+    self.dead = False
+    self.dying = False
 
   def import_assets(self, path):
     self.anim_dict = {}
@@ -43,8 +48,6 @@ class Enemy(pygame.sprite.Sprite):
         rect_w = ENEMY_POS[file_name][3]
         rect_h = ENEMY_POS[file_name][4]
         self.spritesheet = SpriteSheet(f'./graphics/enemy/{file}')
-        # for direction in self.asset_direction:
-          # self.anim_dict[f'{direction}_{file_name}'] = []
         self.anim_dict[file_name] = []
         for _ in range(num_frames):
           new_image = self.spritesheet.image_at((start_x, start_y, rect_w, rect_h), colorkey=(255, 255, 255))
@@ -70,68 +73,37 @@ class Enemy(pygame.sprite.Sprite):
     # if self.ducking and self.on_floor:
     #   self.status = self.status.split('_')[0] + '_duck'
 
+    # death
+    if self.dying:
+      self.status = self.status.split('_')[0] + '_Death'
+
+
   def animate(self, dt):
-    current_animation = self.anim_dict[self.status.split('_')[1]]
+    if not self.dead:
+      current_animation = self.anim_dict[self.status.split('_')[1]]
 
-    if self.attacking and self.status.split('_')[0] == 'Left':
-      x_pos = self.rect.bottomleft[0] + self.anim_dict['Idle'][0].get_width()
-      self.rect = current_animation[int(self.frame_index)].get_rect(bottomright = (x_pos, self.rect.bottomleft[1]))
+      if self.attacking and self.status.split('_')[0] == 'Left':
+        x_pos = self.rect.bottomleft[0] + self.anim_dict['Idle'][0].get_width()
+        self.rect = current_animation[int(self.frame_index)].get_rect(bottomright = (x_pos, self.rect.bottomleft[1]))
 
-    self.frame_index += 7 * dt 
+      self.frame_index += 7 * dt 
 
-    if self.frame_index >= len(current_animation):
-      self.frame_index = 0
-      # if self.attacking:
-      #   self.attacking = False
+      if self.frame_index >= len(current_animation):
+        self.frame_index = 0
+        if self.dying:
+          self.dead = True
+          self.direction.x = 0
 
-    self.image = current_animation[int(self.frame_index)]
+      if self.dead:
+        self.frame_index = len(current_animation) -1
+      # else:
+      #   self.frame_index = len(current_animation)
+        # if self.attacking:
+        #   self.attacking = False
 
-  # def input(self, camera_left_x):
-  #   keys =  pygame.key.get_pressed()
-  #   # movement keys
-  #   if keys[pygame.K_LEFT] and self.pos.x > camera_left_x + 5 and not self.attacking:
-  #       if self.status.split('_')[0] == 'Right':
-  #         self.anim_dict['Walk'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Walk']]
-  #         self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
-  #         self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
-  #         self.anim_dict['Jump'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Jump']]
-  #         self.anim_dict['Fall'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Fall']]
-  #       self.direction.x = -1
-  #       self.status = 'Left_Walk'
-  #   elif keys[pygame.K_RIGHT] and not self.attacking:
-  #       if self.status.split('_')[0] == 'Left':
-  #         self.anim_dict['Walk'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Walk']]
-  #         self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
-  #         self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
-  #         self.anim_dict['Jump'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Jump']]
-  #         self.anim_dict['Fall'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Fall']]
-  #       self.direction.x = 1
-  #       self.status = 'Right_Walk'
-  #   else:
-  #       self.direction.x = 0
-    
-  #   if keys[pygame.K_UP] and self.on_floor and not self.attacking:
-  #     self.direction.y = -self.jump_speed
-
-  #   if pygame.mouse.get_pressed()[0] and not self.attacking and self.on_floor:
-  #     self.frame_index = 0
-  #     self.attacking = True
-
-
-    # if keys[pygame.K_DOWN]:
-    #   self.ducking = True
-    # else:
-    #   self.ducking = False
-
-    # if keys[pygame.K_SPACE] and self.can_shoot:
-
-    #   bullet_direction = vector(1,0) if self.status.split('_')[0] == 'right' else vector(-1,0)
-    #   pos = self.rect.center + bullet_direction * 60
-    #   y_offset = vector(0, -16) if not self.ducking else vector(0, 10)
-    #   self.shoot(pos + y_offset, bullet_direction, self)
-
-    #   self.can_shoot = False
-    #   self.shot_time = pygame.time.get_ticks()
+      self.image = current_animation[int(self.frame_index)]
+    else:
+      pass
 
   # def check_floor_contact(self):
   #   bottom_rect = pygame.Rect(0,0,self.rect.width,5)
@@ -168,16 +140,19 @@ class Enemy(pygame.sprite.Sprite):
       self.on_floor = False
       
 
-  def move(self, dt, camera_left_x):  
+  def move(self, dt):  
     # Horizontal movement + collision
     # self.direction.x = 0.25
-    if self.direction.x != 0:
-      self.status = 'Right_Run'
+    if self.on_floor and not self.dead and abs(self.player.pos.x - self.pos.x) > 50:
+      if self.pos.x < self.player.pos.x:
+        # self.status = 'Right_Run'
+        self.direction.x = 1
+      elif self.pos.x > self.player.pos.x:
+        # self.status = 'Left_Run'
+        self.direction.x = -1
     self.pos.x += self.direction.x * self.speed * dt
     self.collision_rect.centerx = round(self.pos.x)
     self.rect.x = round(self.pos.x)
-    # if self.rect.x < camera_left_x:
-    #   self.rect.x = camera_left_x
 
     # get horizontal collisions
     # self.collision('horizontal')
@@ -196,6 +171,6 @@ class Enemy(pygame.sprite.Sprite):
   def update(self, dt, camera_left_x):
     self.prev_rect = self.rect.copy()
     self.get_status()
-    self.move(dt, camera_left_x)
+    self.move(dt)
     # self.check_floor_contact()
     self.animate(dt)

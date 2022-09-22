@@ -3,14 +3,20 @@ from spritesheet import SpriteSheet
 from settings import *
 from os import walk
 from pygame.math import Vector2 as vector
-import math
 
 class Enemy(pygame.sprite.Sprite):
   def __init__(self, pos, groups, collision_sprites, player):
     super().__init__(groups)
     self.player = player
     self.import_assets('./graphics/enemy')
-    self.status = 'Right_Idle'
+    if pos[0] > self.player.pos.x:
+      self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
+      self.anim_dict['Run'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Run']]
+      self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
+      self.anim_dict['Death'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Death']]
+      self.status = 'Left_Idle'
+    else:
+      self.status = 'Right_Idle'
     self.frame_index = 0
     self.image = self.anim_dict[self.status.split('_')[1]][self.frame_index]
     self.z = 1
@@ -31,7 +37,7 @@ class Enemy(pygame.sprite.Sprite):
 
     
     self.gravity = 15
-    self.on_floor = True
+    self.on_floor = False
     self.is_player = False
     self.dead = False
     self.dying = False
@@ -77,7 +83,6 @@ class Enemy(pygame.sprite.Sprite):
     if self.dying:
       self.status = self.status.split('_')[0] + '_Death'
 
-
   def animate(self, dt):
     if not self.dead:
       current_animation = self.anim_dict[self.status.split('_')[1]]
@@ -96,22 +101,10 @@ class Enemy(pygame.sprite.Sprite):
 
       if self.dead:
         self.frame_index = len(current_animation) -1
-      # else:
-      #   self.frame_index = len(current_animation)
-        # if self.attacking:
-        #   self.attacking = False
 
       self.image = current_animation[int(self.frame_index)]
     else:
       pass
-
-  # def check_floor_contact(self):
-  #   bottom_rect = pygame.Rect(0,0,self.rect.width,5)
-  #   bottom_rect.midtop = self.rect.midbottom
-  #   for sprite in self.collision_sprites.sprites():
-  #     if sprite.rect.colliderect(bottom_rect):
-  #       if self.direction.y > 0:
-  #         self.on_floor = True
 
   def collision(self, direction):
     for sprite in self.collision_sprites.sprites():
@@ -138,18 +131,30 @@ class Enemy(pygame.sprite.Sprite):
      # check if the player is falling
     if self.on_floor and self.direction.y != 0:
       self.on_floor = False
-      
 
   def move(self, dt):  
     # Horizontal movement + collision
     # self.direction.x = 0.25
-    if self.on_floor and not self.dead and abs(self.player.pos.x - self.pos.x) > 50:
-      if self.pos.x < self.player.pos.x:
-        # self.status = 'Right_Run'
-        self.direction.x = 1
-      elif self.pos.x > self.player.pos.x:
-        # self.status = 'Left_Run'
-        self.direction.x = -1
+    if not self.dying and self.on_floor:
+      if self.pos.x > self.player.pos.x and self.pos.x - self.player.pos.x > 60:
+        if self.status.split('_')[0] == 'Right':
+          self.anim_dict['Run'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Run']]
+          self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
+          self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
+          self.anim_dict['Death'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Death']]
+        self.direction.x = -.25
+        self.status = 'Left_Run'
+      elif self.pos.x < self.player.pos.x and self.player.pos.x - self.pos.x > 60:
+        if self.status.split('_')[0] == 'Left':
+          self.anim_dict['Run'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Run']]
+          self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
+          self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
+          self.anim_dict['Death'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Death']]
+        self.direction.x = .25
+        self.status = 'Right_Run'
+      else:
+        self.direction.x = 0
+        self.attacking = True
     self.pos.x += self.direction.x * self.speed * dt
     self.collision_rect.centerx = round(self.pos.x)
     self.rect.x = round(self.pos.x)
@@ -168,9 +173,8 @@ class Enemy(pygame.sprite.Sprite):
     self.collision('vertical')
     # self.moving_floor = None
 
-  def update(self, dt, camera_left_x):
+  def update(self, dt, camera_left_x):   
     self.prev_rect = self.rect.copy()
     self.get_status()
     self.move(dt)
-    # self.check_floor_contact()
     self.animate(dt)

@@ -3,7 +3,7 @@ class State:
         self.game = game
         self.prev_state = None
 
-    def update(self, delta_time, actions):
+    def update(self, delta_time, keys):
         pass
     def render(self, surface):
         pass

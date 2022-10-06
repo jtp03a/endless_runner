@@ -1,6 +1,6 @@
 import pygame
 from pygame.math import Vector2 as vector
-from settings import *
+from state.level.settings import *
 from abc import ABC, abstractmethod
 
 class Camera:

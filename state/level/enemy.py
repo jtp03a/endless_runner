@@ -1,19 +1,19 @@
 import pygame
-from spritesheet import SpriteSheet
-from settings import *
+from state.level.spritesheet import SpriteSheet
+from state.level.settings import *
 from os import walk
 from pygame.math import Vector2 as vector
+from state.level.entity import Entity
 
-class Enemy(pygame.sprite.Sprite):
-  def __init__(self, pos, groups, collision_sprites, player):
-    super().__init__(groups)
+class Enemy(Entity):
+  def __init__(self, pos, groups, collision_sprites, player, path):
+    super().__init__(pos, groups, path)
     self.player = player
-    self.import_assets('./graphics/enemy')
     if pos[0] > self.player.pos.x:
-      self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
-      self.anim_dict['Run'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Run']]
-      self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
-      self.anim_dict['Death'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Death']]
+      # self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
+      # self.anim_dict['Run'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Run']]
+      # self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
+      # self.anim_dict['Death'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Death']]
       self.status = 'Left_Idle'
     else:
       self.status = 'Right_Idle'
@@ -41,24 +41,6 @@ class Enemy(pygame.sprite.Sprite):
     self.is_player = False
     self.dead = False
     self.dying = False
-
-  def import_assets(self, path):
-    self.anim_dict = {}
-    self.asset_direction = ['Right', 'Left']
-    for index, folder in enumerate(walk(path)):
-      for file in folder[2]:
-        file_name = file.split('.')[0]
-        num_frames = ENEMY_POS[file_name][2]
-        start_x = ENEMY_POS[file_name][0]
-        start_y = ENEMY_POS[file_name][1]
-        rect_w = ENEMY_POS[file_name][3]
-        rect_h = ENEMY_POS[file_name][4]
-        self.spritesheet = SpriteSheet(f'./graphics/enemy/{file}')
-        self.anim_dict[file_name] = []
-        for _ in range(num_frames):
-          new_image = self.spritesheet.image_at((start_x, start_y, rect_w, rect_h), colorkey=(255, 255, 255))
-          self.anim_dict[file_name].append(new_image)
-          start_x += 200  
   
   def get_status(self):  
     # idle
@@ -88,12 +70,12 @@ class Enemy(pygame.sprite.Sprite):
       current_animation = self.anim_dict[self.status.split('_')[1]]
 
       if self.attacking and self.status.split('_')[0] == 'Left':
-        x_pos = self.rect.bottomleft[0] + self.anim_dict['Idle'][0].get_width()
+        x_pos = self.rect.bottomleft[0] + 44
         self.rect = current_animation[int(self.frame_index)].get_rect(bottomright = (x_pos, self.rect.bottomleft[1]))
 
       self.frame_index += 7 * dt 
 
-      if self.frame_index >= len(current_animation):
+      if self.frame_index >= len(current_animation) and not self.dead:
         self.frame_index = 0
         if self.dying:
           self.dead = True
@@ -103,8 +85,6 @@ class Enemy(pygame.sprite.Sprite):
         self.frame_index = len(current_animation) -1
 
       self.image = current_animation[int(self.frame_index)]
-    else:
-      pass
 
   def collision(self, direction):
     for sprite in self.collision_sprites.sprites():
@@ -137,19 +117,19 @@ class Enemy(pygame.sprite.Sprite):
     # self.direction.x = 0.25
     if not self.dying and self.on_floor:
       if self.pos.x > self.player.pos.x and self.pos.x - self.player.pos.x > 60:
-        if self.status.split('_')[0] == 'Right':
-          self.anim_dict['Run'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Run']]
-          self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
-          self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
-          self.anim_dict['Death'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Death']]
+        # if self.status.split('_')[0] == 'Right':
+        #   self.anim_dict['Run'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Run']]
+        #   self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
+        #   self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
+        #   self.anim_dict['Death'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Death']]
         self.direction.x = -.25
         self.status = 'Left_Run'
       elif self.pos.x < self.player.pos.x and self.player.pos.x - self.pos.x > 60:
-        if self.status.split('_')[0] == 'Left':
-          self.anim_dict['Run'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Run']]
-          self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
-          self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
-          self.anim_dict['Death'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Death']]
+        # if self.status.split('_')[0] == 'Left':
+        #   self.anim_dict['Run'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Run']]
+        #   self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
+        #   self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
+        #   self.anim_dict['Death'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Death']]
         self.direction.x = .25
         self.status = 'Right_Run'
       else:

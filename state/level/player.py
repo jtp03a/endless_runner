@@ -1,16 +1,16 @@
 import pygame
-from spritesheet import SpriteSheet
-from settings import *
+from state.level.settings import *
+from state.level.strike import Strike
 from os import walk
 from pygame.math import Vector2 as vector
+from state.level.entity import Entity
 
-class Player(pygame.sprite.Sprite):
-  def __init__(self, pos, groups, collision_sprites):
-    super().__init__(groups)
-    self.import_assets('./graphics/player')
+class Player(Entity):
+  def __init__(self, pos, groups, collision_sprites, path):
+    super().__init__(pos, groups, path)
     self.status = 'Right_Idle'
     self.frame_index = 0
-    self.image = self.anim_dict[self.status.split('_')[1]][self.frame_index]
+    self.image = self.anim_dict[self.status][self.frame_index]
     self.z = 2
     self.left_border = 0
     self.right_border = 1280
@@ -24,6 +24,7 @@ class Player(pygame.sprite.Sprite):
 
     self.attacking = False
 
+    self.all_sprites = groups
     self.collision_sprites = collision_sprites
     self.collision_rect = self.rect.inflate(self.rect.width, self.rect.height * .75)
     self.prev_rect = self.rect.copy()
@@ -32,24 +33,9 @@ class Player(pygame.sprite.Sprite):
     self.jump_speed = 500
     self.on_floor = True
     self.is_player = True
+    self.attack = pygame.sprite.Group()
 
-  def import_assets(self, path):
-    self.anim_dict = {}
-    self.asset_direction = ['Right', 'Left']
-    for index, folder in enumerate(walk(path)):
-      for file in folder[2]:
-        file_name = file.split('.')[0]
-        num_frames = START_POS[file_name][2]
-        start_x = START_POS[file_name][0]
-        start_y = START_POS[file_name][1]
-        rect_w = START_POS[file_name][3]
-        rect_h = START_POS[file_name][4]
-        self.spritesheet = SpriteSheet(f'./graphics/player/{file}')
-        self.anim_dict[file_name] = []
-        for _ in range(num_frames):
-          new_image = self.spritesheet.image_at((start_x, start_y, rect_w, rect_h), colorkey=(255, 255, 255))
-          self.anim_dict[file_name].append(new_image)
-          start_x += 200  
+
   
   def get_status(self):  
     # idle
@@ -71,17 +57,37 @@ class Player(pygame.sprite.Sprite):
     #   self.status = self.status.split('_')[0] + '_duck'
 
   def animate(self, dt):
-    current_animation = self.anim_dict[self.status.split('_')[1]]
+    print(self.status)
+    current_animation = self.anim_dict[self.status]
 
     if self.attacking and self.status.split('_')[0] == 'Left':
-      x_pos = self.rect.bottomleft[0] + self.anim_dict['Idle'][0].get_width()
-      self.rect = current_animation[int(self.frame_index)].get_rect(bottomright = (x_pos, self.rect.bottomleft[1]))
+      adjusted_bottomx = self.rect.bottomleft[0] + 44
+      self.rect = current_animation[int(self.frame_index)].get_rect(bottomright = (adjusted_bottomx, self.rect.bottomleft[1]))
+      if int(self.frame_index) == 4:
+        x_pos = self.rect.topleft[0] - 55
+        y_pos = self.rect.topleft[1] + 2
+        self.attack.sprites()[0].image = self.anim_dict['Left_Strike'][0]
+        self.attack.sprites()[0].rect.x = x_pos
+        self.attack.sprites()[0].rect.y = y_pos
+      if int(self.frame_index) == 5:
+        self.attack.sprites()[0].image = self.anim_dict['Left_Strike'][1]
+    elif self.attacking and self.status.split('_')[0] == 'Right':
+      if int(self.frame_index) == 4:
+        x_pos = self.rect.topleft[0] + 11
+        y_pos = self.rect.topleft[1] + 2
+        self.attack.sprites()[0].image = self.anim_dict['Right_Strike'][0]
+        self.attack.sprites()[0].rect.x = x_pos
+        self.attack.sprites()[0].rect.y = y_pos
+      if int(self.frame_index) == 5:
+        self.attack.sprites()[0].image = self.anim_dict['Right_Strike'][1]
 
     self.frame_index += 10 * dt
 
     if self.frame_index >= len(current_animation):
       self.frame_index = 0
       if self.attacking:
+        for sprite in self.attack:
+          sprite.kill()
         self.attacking = False
 
     self.image = current_animation[int(self.frame_index)]
@@ -91,21 +97,9 @@ class Player(pygame.sprite.Sprite):
     keys =  pygame.key.get_pressed()
     # movement keys
     if keys[pygame.K_LEFT] and self.pos.x > camera_left_x + 5 and not self.attacking:
-        if self.status.split('_')[0] == 'Right':
-          self.anim_dict['Walk'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Walk']]
-          self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
-          self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
-          self.anim_dict['Jump'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Jump']]
-          self.anim_dict['Fall'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Fall']]
         self.direction.x = -1
         self.status = 'Left_Walk'
     elif keys[pygame.K_RIGHT] and not self.attacking:
-        if self.status.split('_')[0] == 'Left':
-          self.anim_dict['Walk'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Walk']]
-          self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
-          self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
-          self.anim_dict['Jump'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Jump']]
-          self.anim_dict['Fall'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Fall']]
         self.direction.x = 1
         self.status = 'Right_Walk'
     else:
@@ -117,6 +111,10 @@ class Player(pygame.sprite.Sprite):
     if pygame.mouse.get_pressed()[0] and not self.attacking and self.on_floor:
       self.frame_index = 0
       self.attacking = True
+      if self.status.split('_')[0] == 'Left':
+        Strike(self.anim_dict['Left_Strike'], self, [self.all_sprites, self.attack])
+      elif self.status.split('_')[0] == 'Right':
+        Strike(self.anim_dict['Right_Strike'], self, [self.all_sprites, self.attack])
 
 
     # if keys[pygame.K_DOWN]:

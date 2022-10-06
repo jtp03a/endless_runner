@@ -1,5 +1,5 @@
 import pygame
-from settings import *
+from state.level.settings import *
 from pygame.math import Vector2 as vector
 
 class Tile(pygame.sprite.Sprite):

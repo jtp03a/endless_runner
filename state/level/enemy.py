@@ -18,7 +18,7 @@ class Enemy(Entity):
     else:
       self.status = 'Right_Idle'
     self.frame_index = 0
-    self.image = self.anim_dict[self.status.split('_')[1]][self.frame_index]
+    self.image = self.anim_dict[self.status][self.frame_index]
     self.z = 1
 
     # self.mask = pygame.mask.from_surface(self.image)
@@ -67,7 +67,7 @@ class Enemy(Entity):
 
   def animate(self, dt):
     if not self.dead:
-      current_animation = self.anim_dict[self.status.split('_')[1]]
+      current_animation = self.anim_dict[self.status]
 
       if self.attacking and self.status.split('_')[0] == 'Left':
         x_pos = self.rect.bottomleft[0] + 44

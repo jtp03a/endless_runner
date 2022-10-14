@@ -85,12 +85,6 @@ class Enemy(Entity):
     if not self.dead:
       self.image = current_animation[int(self.frame_index)]
 
-
-
-      # if self.dead:
-      #   self.image = self.anim_dict[self.status][-1]
-      #   # self.rect = self.image.get_rect(bottom_left)
-
   def collision(self, direction):
     for sprite in self.collision_sprites.sprites():
       if sprite.rect.colliderect(self.rect):

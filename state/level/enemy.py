@@ -10,13 +10,9 @@ class Enemy(Entity):
     super().__init__(pos, groups, path)
     self.player = player
     if pos[0] > self.player.pos.x:
-      # self.anim_dict['Idle'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Idle']]
-      # self.anim_dict['Run'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Run']]
-      # self.anim_dict['Attack'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Attack']]
-      # self.anim_dict['Death'] = [pygame.transform.flip(image, True, False) for image in self.anim_dict['Death']]
-      self.status = 'Left_Idle'
+      self.status = 'Left_Fall'
     else:
-      self.status = 'Right_Idle'
+      self.status = 'Right_Fall'
     self.frame_index = 0
     self.image = self.anim_dict[self.status][self.frame_index]
     self.z = 1
@@ -52,10 +48,10 @@ class Enemy(Entity):
       self.status = self.status.split('_')[0] + '_Attack'
 
     # jumping
-    # if self.direction.y < 0 and not self.on_floor:
-    #   self.status = self.status.split('_')[0] + '_Jump'
-    # if self.direction.y > 0 and not self.on_floor:
-    #   self.status = self.status.split('_')[0] + '_Fall'
+    if self.direction.y < 0 and not self.on_floor:
+      self.status = self.status.split('_')[0] + '_Jump'
+    if self.direction.y > 0 and not self.on_floor:
+      self.status = self.status.split('_')[0] + '_Fall'
 
     # # ducking
     # if self.ducking and self.on_floor:
@@ -66,25 +62,34 @@ class Enemy(Entity):
       self.status = self.status.split('_')[0] + '_Death'
 
   def animate(self, dt):
+    current_animation = self.anim_dict[self.status]
+
+    self.frame_index += 7 * dt 
+
     if not self.dead:
-      current_animation = self.anim_dict[self.status]
+      if self.frame_index >= len(current_animation):
+        self.frame_index = 0
+        if self.dying:
+          self.dead = True
+          self.attacking = False
+          self.direction.x = 0
 
       if self.attacking and self.status.split('_')[0] == 'Left':
         x_pos = self.rect.bottomleft[0] + 44
         self.rect = current_animation[int(self.frame_index)].get_rect(bottomright = (x_pos, self.rect.bottomleft[1]))
 
-      self.frame_index += 7 * dt 
+    if self.dead and self.status.split('_')[0] == 'Left':
+      x_pos = self.rect.bottomleft[0] + 44
+      self.rect = current_animation[-1].get_rect(bottomright = (x_pos, self.rect.bottomleft[1]))
 
-      if self.frame_index >= len(current_animation) and not self.dead:
-        self.frame_index = 0
-        if self.dying:
-          self.dead = True
-          self.direction.x = 0
-
-      if self.dead:
-        self.frame_index = len(current_animation) -1
-
+    if not self.dead:
       self.image = current_animation[int(self.frame_index)]
+
+
+
+      # if self.dead:
+      #   self.image = self.anim_dict[self.status][-1]
+      #   # self.rect = self.image.get_rect(bottom_left)
 
   def collision(self, direction):
     for sprite in self.collision_sprites.sprites():

@@ -31,7 +31,6 @@ class Player(Entity):
 
     self.gravity = 15
     self.jump_speed = 500
-    self.on_floor = True
     self.is_player = True
     self.attack = pygame.sprite.Group()
 
@@ -57,7 +56,6 @@ class Player(Entity):
     #   self.status = self.status.split('_')[0] + '_duck'
 
   def animate(self, dt):
-    print(self.status)
     current_animation = self.anim_dict[self.status]
 
     if self.attacking and self.status.split('_')[0] == 'Left':

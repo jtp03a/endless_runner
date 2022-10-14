@@ -110,6 +110,7 @@ class Level(State):
       self.enemy_time = pygame.time.get_ticks()
       self.random_interval = random.randint(1000, 5000)
       self.gen_enemy = False
+      self.num_enemies = 0
       self.gen_enemies()
       self.all_sprites = AllSprites()
       self.dead_sprites = pygame.sprite.Group()
@@ -122,6 +123,7 @@ class Level(State):
 
       if current_time - self.enemy_time > self.random_interval:
         Enemy((random.randint(int(self.player.pos.x - 200), int(self.player.pos.x + 200)), 200), self.all_sprites, self.all_sprites.collision_sprites, self.player, 'enemy')
+        self.num_enemies += 1
         self.random_interval = random.randint(1000, 5000)
         self.enemy_time = pygame.time.get_ticks()
 
@@ -146,7 +148,8 @@ class Level(State):
         new_state.enter_state()
      
       self.all_sprites.update(delta_time, self.all_sprites.camera.camera_rect.left)
-      self.gen_enemies()
+      if self.num_enemies < 5:
+        self.gen_enemies()
       self.damage()
       self.remove_dead_sprites()
 

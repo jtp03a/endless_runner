@@ -9,6 +9,8 @@ class Entity(pygame.sprite.Sprite):
     super().__init__(groups)
     self.asset_type = path
     self.import_assets(f'./state/level/graphics/{path}')
+
+    self.on_floor = True
     
 
   def import_assets(self, path):

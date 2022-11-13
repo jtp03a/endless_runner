@@ -61,7 +61,7 @@ class AllSprites(pygame.sprite.Group):
     self.auto = Auto(self.camera, player)
     self.border = Border(self.camera, player)
     self.box = Box(self.camera, player)
-    self.camera.setmethod(self.box)
+    self.camera.setmethod(self.auto)
 
   def layer_setup(self, surf, group, layer):
     # for x in range(self.calc_tiles(surf)):
@@ -94,13 +94,9 @@ class AllSprites(pygame.sprite.Group):
     self.infinite_tiles(self.canopy_sprites, 'Canopy', 1.2, self.canopy_sprites, display)
     self.infinite_tiles(self.ground_sprites, 'Ground', 1.0, [self.ground_sprites, self.collision_sprites], display)
 
-    # pygame.draw.rect(self.display_surface, 'red', sprite.mask_rect, 5)
-
     # active elements
     for sprite in sorted(self.sprites(), key = lambda sprite: sprite.z):
       display.blit(sprite.image, (sprite.rect.x - self.camera.offset.x, sprite.rect.y - self.camera.offset.y))
-      # if sprite.is_player:
-      #   pygame.draw.rect(display, 'red', sprite.rect, 1)
 
     self.infinite_tiles(self.forground_sprites, 'FG', .8, self.forground_sprites, display)
 
@@ -114,7 +110,7 @@ class Level(State):
       self.gen_enemies()
       self.all_sprites = AllSprites()
       self.dead_sprites = pygame.sprite.Group()
-      self.player = Player((0, 478), self.all_sprites, self.all_sprites.collision_sprites, 'player')
+      self.player = Player((300, 478), self.all_sprites, self.all_sprites.collision_sprites, 'player')
 
       self.all_sprites.setup_camera(self.player)
 
@@ -123,7 +119,7 @@ class Level(State):
 
       if current_time - self.enemy_time > self.random_interval:
         Enemy((random.randint(int(self.player.pos.x - 200), int(self.player.pos.x + 200)), 200), self.all_sprites, self.all_sprites.collision_sprites, self.player, 'enemy')
-        self.num_enemies += 1
+        # self.num_enemies += 1
         self.random_interval = random.randint(1000, 5000)
         self.enemy_time = pygame.time.get_ticks()
 
@@ -148,8 +144,7 @@ class Level(State):
         new_state.enter_state()
      
       self.all_sprites.update(delta_time, self.all_sprites.camera.camera_rect.left)
-      if self.num_enemies < 5:
-        self.gen_enemies()
+      self.gen_enemies()
       self.damage()
       self.remove_dead_sprites()
 
